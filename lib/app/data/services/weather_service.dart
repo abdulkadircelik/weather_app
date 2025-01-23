@@ -14,78 +14,100 @@ class WeatherService {
   Future<String> getWeatherBackgroundImage(
       String condition, bool isNight) async {
     try {
-      String query = _getImageSearchQuery(condition, isNight);
-      final response = await http.get(
-        Uri.parse(
-          '$imageBaseUrl/photos/random?query=$query&orientation=portrait&client_id=$unsplashApiKey&collections=weather,nature,landscape',
-        ),
-      );
-
-      print('Arka plan resmi sorgusu: $query');
-      print('Arka plan resmi yanıt durumu: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['urls']['regular'];
-      } else {
-        print('Arka plan resmi alınamadı: ${response.statusCode}');
-        return _getDefaultBackgroundUrl(condition, isNight);
-      }
+      return _getWeatherBackgroundUrl(condition, isNight);
     } catch (e) {
       print('Arka plan resmi alınırken hata: $e');
-      return _getDefaultBackgroundUrl(condition, isNight);
+      return _getDefaultBackgroundUrl();
     }
   }
 
-  String _getImageSearchQuery(String condition, bool isNight) {
-    String weatherType = '';
-    String timePrefix = isNight ? 'night' : 'day';
+  String _getWeatherBackgroundUrl(String condition, bool isNight) {
+    // OpenWeatherMap ikon kodlarına göre arka plan seç
+    String iconCode = condition.toLowerCase();
 
-    if (condition.contains('açık')) {
-      weatherType = isNight ? 'starry night sky' : 'sunny clear sky';
-    } else if (condition.contains('parçalı bulut')) {
-      weatherType = 'scattered clouds sky';
-    } else if (condition.contains('bulut')) {
-      weatherType = 'overcast cloudy sky';
-    } else if (condition.contains('hafif yağmur')) {
-      weatherType = 'light rain drops';
-    } else if (condition.contains('yağmur')) {
-      weatherType = 'heavy rain storm';
-    } else if (condition.contains('kar')) {
-      weatherType = 'snowy winter';
-    } else if (condition.contains('sis')) {
-      weatherType = 'foggy misty';
-    } else if (condition.contains('gök gürültü')) {
-      weatherType = 'thunderstorm lightning';
-    } else if (condition.contains('rüzgar')) {
-      weatherType = 'windy trees';
-    } else if (condition.contains('kapalı')) {
-      weatherType = 'overcast grey sky';
-    } else if (condition.contains('güneş')) {
-      weatherType = 'bright sunny day';
-    } else {
-      weatherType = condition;
+    // Gündüz durumları
+    if (!isNight) {
+      switch (iconCode) {
+        case '01d': // açık hava
+          return 'https://images.unsplash.com/photo-1598717123623-994ab270a08e'; // Parlak güneşli mavi gökyüzü
+        case '02d': // az bulutlu
+          return 'https://images.unsplash.com/photo-1601297183305-6df142704ea2'; // Az bulutlu mavi gökyüzü
+        case '03d': // parçalı bulutlu
+          return 'https://images.unsplash.com/photo-1501630834273-4b5604d2ee31'; // Parçalı bulutlu gökyüzü
+        case '04d': // çok bulutlu
+          return 'https://images.unsplash.com/photo-1525087740718-9e0f2c58c7ef'; // Kapalı bulutlu gökyüzü
+        case '09d': // hafif yağmurlu
+          return 'https://images.unsplash.com/photo-1438449805896-28a666819a20'; // Hafif yağmur
+        case '10d': // yağmurlu
+          return 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17'; // Yağmur
+        case '11d': // gök gürültülü
+          return 'https://images.unsplash.com/photo-1605727216801-e27ce1d0cc28'; // Şimşek ve yağmur
+        case '13d': // karlı
+          return 'https://images.unsplash.com/photo-1418985991508-e47386d96a71'; // Kar yağışı
+        case '50d': // sisli
+          return 'https://images.unsplash.com/photo-1486184885347-1464b5f10296'; // Sis
+        default:
+          if (condition.contains('açık')) {
+            return 'https://images.unsplash.com/photo-1598717123623-994ab270a08e';
+          } else if (condition.contains('parçalı bulut')) {
+            return 'https://images.unsplash.com/photo-1501630834273-4b5604d2ee31';
+          } else if (condition.contains('bulut')) {
+            return 'https://images.unsplash.com/photo-1525087740718-9e0f2c58c7ef';
+          } else if (condition.contains('hafif yağmur')) {
+            return 'https://images.unsplash.com/photo-1438449805896-28a666819a20';
+          } else if (condition.contains('yağmur')) {
+            return 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17';
+          } else if (condition.contains('kar')) {
+            return 'https://images.unsplash.com/photo-1418985991508-e47386d96a71';
+          } else if (condition.contains('sis')) {
+            return 'https://images.unsplash.com/photo-1486184885347-1464b5f10296';
+          } else if (condition.contains('gök gürültü')) {
+            return 'https://images.unsplash.com/photo-1605727216801-e27ce1d0cc28';
+          }
+      }
+    }
+    // Gece durumları
+    else {
+      switch (iconCode) {
+        case '01n': // açık hava gece
+          return 'https://images.unsplash.com/photo-1507400492013-162706c8c05e'; // Yıldızlı gece
+        case '02n': // az bulutlu gece
+          return 'https://images.unsplash.com/photo-1504608524841-42fe6f032b4b'; // Az bulutlu gece
+        case '03n': // parçalı bulutlu gece
+        case '04n': // çok bulutlu gece
+          return 'https://images.unsplash.com/photo-1500740516770-92bd004b996e'; // Bulutlu gece
+        case '09n': // hafif yağmurlu gece
+          return 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65'; // Hafif yağmurlu gece
+        case '10n': // yağmurlu gece
+          return 'https://images.unsplash.com/photo-1501999635878-71cb5379c2d8'; // Yağmurlu gece
+        case '11n': // gök gürültülü gece
+          return 'https://images.unsplash.com/photo-1472145246862-b24cf25c4a36'; // Gök gürültülü gece
+        case '13n': // karlı gece
+          return 'https://images.unsplash.com/photo-1478265409131-1f65c88f965c'; // Karlı gece
+        case '50n': // sisli gece
+          return 'https://images.unsplash.com/photo-1485236715568-ddc5ee6ca227'; // Sisli gece
+        default:
+          if (condition.contains('açık')) {
+            return 'https://images.unsplash.com/photo-1507400492013-162706c8c05e';
+          } else if (condition.contains('bulut')) {
+            return 'https://images.unsplash.com/photo-1500740516770-92bd004b996e';
+          } else if (condition.contains('yağmur')) {
+            return 'https://images.unsplash.com/photo-1501999635878-71cb5379c2d8';
+          } else if (condition.contains('kar')) {
+            return 'https://images.unsplash.com/photo-1478265409131-1f65c88f965c';
+          } else if (condition.contains('sis')) {
+            return 'https://images.unsplash.com/photo-1485236715568-ddc5ee6ca227';
+          } else if (condition.contains('gök gürültü')) {
+            return 'https://images.unsplash.com/photo-1472145246862-b24cf25c4a36';
+          }
+      }
     }
 
-    return '$weatherType $timePrefix weather nature';
+    return _getDefaultBackgroundUrl();
   }
 
-  String _getDefaultBackgroundUrl(String condition, bool isNight) {
-    if (condition.contains('yağmur')) {
-      return 'https://images.unsplash.com/photo-1519692933481-e162a57d6721';
-    } else if (condition.contains('kar')) {
-      return 'https://images.unsplash.com/photo-1478265409131-1f65c88f965c';
-    } else if (condition.contains('bulut')) {
-      return 'https://images.unsplash.com/photo-1534088568595-a066f410bcda';
-    } else if (condition.contains('gök gürültü')) {
-      return 'https://images.unsplash.com/photo-1605727216801-e27ce1d0cc28';
-    } else if (condition.contains('sis')) {
-      return 'https://images.unsplash.com/photo-1485236715568-ddc5ee6ca227';
-    } else if (isNight) {
-      return 'https://images.unsplash.com/photo-1532978379173-523e16f371f9';
-    } else {
-      return 'https://images.unsplash.com/photo-1601297183305-6df142704ea2';
-    }
+  String _getDefaultBackgroundUrl() {
+    return 'https://images.unsplash.com/photo-1598717123623-994ab270a08e'; // Varsayılan güzel mavi gökyüzü
   }
 
   Future<WeatherModel> getCurrentWeather(String city) async {
@@ -101,6 +123,8 @@ class WeatherService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print(
+            'Visibility: ${data['visibility']}, Pressure: ${data['main']['pressure']}'); // Debug için eklendi
         return WeatherModel(
           cityName: data['name'],
           temperature: data['main']['temp'].toDouble(),
@@ -119,8 +143,8 @@ class WeatherService {
           humidity: data['main']['humidity'],
           feelsLike: data['main']['feels_like'].toDouble(),
           icon: data['weather'][0]['icon'],
-          visibility: data['visibility'],
-          pressure: data['main']['pressure'],
+          visibility: (data['visibility'] ?? 0) as int,
+          pressure: (data['main']['pressure'] ?? 0) as int,
         );
       } else {
         throw Exception('API Error: ${response.statusCode} - ${response.body}');
@@ -256,6 +280,8 @@ class WeatherService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print(
+            'Visibility: ${data['visibility']}, Pressure: ${data['main']['pressure']}'); // Debug için eklendi
         return WeatherModel(
           cityName: data['name'],
           temperature: data['main']['temp'].toDouble(),
@@ -274,8 +300,8 @@ class WeatherService {
           humidity: data['main']['humidity'],
           feelsLike: data['main']['feels_like'].toDouble(),
           icon: data['weather'][0]['icon'],
-          visibility: data['visibility'],
-          pressure: data['main']['pressure'],
+          visibility: (data['visibility'] ?? 0) as int,
+          pressure: (data['main']['pressure'] ?? 0) as int,
         );
       } else {
         throw Exception('API Error: ${response.statusCode} - ${response.body}');

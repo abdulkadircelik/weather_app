@@ -28,6 +28,47 @@ class WeatherController extends GetxController {
     _initializeWeatherData();
   }
 
+  Future<void> _initializeWeatherData() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      print('Konum servisi başlatılıyor...');
+      final position = await _locationService.getCurrentLocation();
+
+      if (position != null) {
+        print('Konum alındı, hava durumu getiriliyor...');
+        try {
+          final response = await _weatherService.getCurrentWeatherByCoordinates(
+            position.latitude,
+            position.longitude,
+          );
+          currentCity.value = response.cityName;
+          print('Şehir bulundu: ${currentCity.value}');
+          await fetchWeatherData(currentCity.value);
+          return; // Konum başarıyla alındıysa ve hava durumu getiriliyorsa fonksiyondan çık
+        } catch (e) {
+          print('Koordinatlardan hava durumu alınamadı: $e');
+          // Hata durumunda İstanbul'a geri dön
+          currentCity.value = 'İstanbul';
+        }
+      } else {
+        print('Konum alınamadı, varsayılan şehir kullanılıyor');
+        currentCity.value = 'İstanbul';
+      }
+
+      // Eğer buraya kadar gelindiyse (konum alınamadıysa veya hata olduysa) İstanbul için hava durumunu getir
+      await fetchWeatherData(currentCity.value);
+    } catch (e) {
+      print('Konum servisi hatası: $e');
+      errorMessage.value = e.toString();
+      currentCity.value = 'İstanbul';
+      await fetchWeatherData(currentCity.value);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   void _setupConnectivityStream() {
     _connectivity.onConnectivityChanged.listen((result) {
       hasInternetConnection.value = result != ConnectivityResult.none;
@@ -35,26 +76,6 @@ class WeatherController extends GetxController {
         fetchWeatherData(currentCity.value);
       }
     });
-  }
-
-  Future<void> _initializeWeatherData() async {
-    isLoading.value = true;
-    try {
-      final position = await _locationService.getCurrentLocation();
-      if (position != null) {
-        // Konum bilgisini şehir adına çevir ve hava durumunu getir
-        final response = await _weatherService.getCurrentWeatherByCoordinates(
-          position.latitude,
-          position.longitude,
-        );
-        currentCity.value = response.cityName;
-      }
-    } catch (e) {
-      print('Konum alınamadı, varsayılan şehir kullanılıyor: $e');
-      currentCity.value = 'İstanbul';
-    }
-    await fetchWeatherData(currentCity.value);
-    isLoading.value = false;
   }
 
   Future<void> _updateBackgroundImage() async {
@@ -114,5 +135,26 @@ class WeatherController extends GetxController {
 
   void refreshWeatherData() {
     fetchWeatherData(currentCity.value);
+  }
+
+  // Konum servisi ayarlarından dönüldüğünde konumu tekrar kontrol et
+  Future<void> checkLocationAndUpdateWeather() async {
+    try {
+      final position = await _locationService.getCurrentLocation();
+      if (position != null) {
+        final response = await _weatherService.getCurrentWeatherByCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        currentCity.value = response.cityName;
+        await fetchWeatherData(currentCity.value);
+      }
+    } catch (e) {
+      print('Konum kontrolü sırasında hata: $e');
+      if (currentCity.value.isEmpty) {
+        currentCity.value = 'İstanbul';
+        await fetchWeatherData(currentCity.value);
+      }
+    }
   }
 }

@@ -31,12 +31,12 @@ class WeatherModel {
 
   factory WeatherModel.fromJson(Map<String, dynamic> json) {
     return WeatherModel(
-      cityName: json['name'] ?? '',
-      temperature: (json['main']['temp'] as num).toDouble(),
-      description: json['weather'][0]['description'] ?? '',
-      maxTemp: (json['main']['temp_max'] as num).toDouble(),
-      minTemp: (json['main']['temp_min'] as num).toDouble(),
-      windSpeed: (json['wind']['speed'] as num).toDouble(),
+      cityName: json['name'],
+      temperature: json['main']['temp'].toDouble(),
+      description: json['weather'][0]['description'],
+      maxTemp: json['main']['temp_max'].toDouble(),
+      minTemp: json['main']['temp_min'].toDouble(),
+      windSpeed: json['wind']['speed'].toDouble(),
       sunrise:
           DateTime.fromMillisecondsSinceEpoch(json['sys']['sunrise'] * 1000)
               .toString()
@@ -44,11 +44,11 @@ class WeatherModel {
       sunset: DateTime.fromMillisecondsSinceEpoch(json['sys']['sunset'] * 1000)
           .toString()
           .substring(11, 16),
-      humidity: json['main']['humidity'] as int? ?? 0,
-      feelsLike: (json['main']['feels_like'] as num).toDouble(),
-      icon: json['weather'][0]['icon'] ?? '',
-      visibility: (json['visibility'] as int?) ?? 0,
-      pressure: json['main']['pressure'] as int? ?? 0,
+      humidity: json['main']['humidity'],
+      feelsLike: json['main']['feels_like'].toDouble(),
+      icon: json['weather'][0]['icon'],
+      visibility: json['visibility'] ?? 0,
+      pressure: json['main']['pressure'] ?? 0,
     );
   }
 }

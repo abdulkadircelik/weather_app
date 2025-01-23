@@ -452,7 +452,7 @@ class WeatherView extends GetView<WeatherController> {
           children: [
             _buildDetailCard(
               'Görünürlük',
-              '${(controller.currentWeather.value?.visibility ?? 0) / 1000} km',
+              '${((controller.currentWeather.value?.visibility ?? 0) / 1000).toStringAsFixed(1)} km',
               Icons.visibility_outlined,
             ),
             _buildDetailCard(
