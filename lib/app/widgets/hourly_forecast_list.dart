@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../modules/weather/controllers/weather_controller.dart';
 
 class HourlyForecastList extends GetView<WeatherController> {
+  // ignore: use_super_parameters
   const HourlyForecastList({Key? key}) : super(key: key);
 
   @override
@@ -14,7 +15,7 @@ class HourlyForecastList extends GetView<WeatherController> {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withAlpha(100),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 5),
@@ -77,8 +78,8 @@ class HourlyForecastList extends GetView<WeatherController> {
                         boxShadow: [
                           BoxShadow(
                             color: isNow
-                                ? Colors.blue.shade200.withOpacity(0.5)
-                                : Colors.grey.withOpacity(0.1),
+                                ? Colors.blue.shade200.withAlpha(100)
+                                : Colors.grey.withAlpha(100),
                             spreadRadius: 1,
                             blurRadius: 5,
                             offset: const Offset(0, 3),
@@ -104,7 +105,7 @@ class HourlyForecastList extends GetView<WeatherController> {
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: isNow
-                                    ? Colors.white.withOpacity(0.2)
+                                    ? Colors.white.withAlpha(100)
                                     : Colors.white,
                                 borderRadius: BorderRadius.circular(12),
                               ),

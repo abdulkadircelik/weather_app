@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../modules/weather/controllers/weather_controller.dart';
 
 class CurrentWeatherCard extends GetView<WeatherController> {
+  // ignore: use_super_parameters
   const CurrentWeatherCard({Key? key}) : super(key: key);
 
   @override
@@ -13,14 +14,14 @@ class CurrentWeatherCard extends GetView<WeatherController> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.blue.shade300.withOpacity(0.7),
-            Colors.blue.shade500.withOpacity(0.7),
+            Colors.blue.shade300.withAlpha(100),
+            Colors.blue.shade500.withAlpha(100),
           ],
         ),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.shade100.withOpacity(0.5),
+            color: Colors.blue.shade100.withAlpha(100),
             spreadRadius: 2,
             blurRadius: 10,
             offset: const Offset(0, 5),
@@ -121,7 +122,7 @@ class CurrentWeatherCard extends GetView<WeatherController> {
                   padding:
                       const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withAlpha(100),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(

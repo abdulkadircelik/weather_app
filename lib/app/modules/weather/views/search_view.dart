@@ -4,6 +4,7 @@ import '../controllers/weather_controller.dart';
 import '../../../core/theme/app_theme.dart';
 
 class SearchView extends GetView<WeatherController> {
+  // ignore: use_super_parameters
   const SearchView({Key? key}) : super(key: key);
 
   @override
@@ -30,7 +31,7 @@ class SearchView extends GetView<WeatherController> {
                 hintStyle: const TextStyle(color: Colors.white60),
                 prefixIcon: const Icon(Icons.search, color: Colors.white60),
                 filled: true,
-                fillColor: AppTheme.cardColor.withOpacity(0.2),
+                fillColor: AppTheme.cardColor.withAlpha(100),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(15),
                   borderSide: BorderSide.none,
@@ -64,7 +65,7 @@ class SearchView extends GetView<WeatherController> {
 
   Widget _buildQuickCityItem(String city) {
     return Card(
-      color: AppTheme.cardColor.withOpacity(0.2),
+      color: AppTheme.cardColor.withAlpha(100),
       child: ListTile(
         title: Text(
           city,

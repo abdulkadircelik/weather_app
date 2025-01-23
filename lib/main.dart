@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'app/modules/weather/views/weather_view.dart';
 import 'app/modules/weather/controllers/weather_controller.dart';
+import 'app/modules/weather/views/weather_view.dart';
 import 'app/core/theme/app_theme.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await initializeDateFormatting('tr_TR', null);
   runApp(const MyApp());
@@ -18,13 +19,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Hava Durumu',
       theme: AppTheme.darkTheme,
       home: const WeatherView(),
       initialBinding: BindingsBuilder(() {
         Get.put(WeatherController());
       }),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

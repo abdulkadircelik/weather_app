@@ -33,34 +33,28 @@ class WeatherController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      print('Konum servisi başlatılıyor...');
       final position = await _locationService.getCurrentLocation();
 
       if (position != null) {
-        print('Konum alındı, hava durumu getiriliyor...');
         try {
           final response = await _weatherService.getCurrentWeatherByCoordinates(
             position.latitude,
             position.longitude,
           );
           currentCity.value = response.cityName;
-          print('Şehir bulundu: ${currentCity.value}');
           await fetchWeatherData(currentCity.value);
           return; // Konum başarıyla alındıysa ve hava durumu getiriliyorsa fonksiyondan çık
         } catch (e) {
-          print('Koordinatlardan hava durumu alınamadı: $e');
           // Hata durumunda İstanbul'a geri dön
           currentCity.value = 'İstanbul';
         }
       } else {
-        print('Konum alınamadı, varsayılan şehir kullanılıyor');
         currentCity.value = 'İstanbul';
       }
 
       // Eğer buraya kadar gelindiyse (konum alınamadıysa veya hata olduysa) İstanbul için hava durumunu getir
       await fetchWeatherData(currentCity.value);
     } catch (e) {
-      print('Konum servisi hatası: $e');
       errorMessage.value = e.toString();
       currentCity.value = 'İstanbul';
       await fetchWeatherData(currentCity.value);
@@ -87,7 +81,7 @@ class WeatherController extends GetxController {
             await _weatherService.getWeatherBackgroundImage(condition, isNight);
         backgroundImageUrl.value = imageUrl;
       } catch (e) {
-        print('Arka plan resmi güncellenirken hata: $e');
+        backgroundImageUrl.value = '';
       }
     }
   }
@@ -115,7 +109,6 @@ class WeatherController extends GetxController {
       await _updateBackgroundImage();
     } catch (e) {
       errorMessage.value = 'Hava durumu verileri alınamadı: ${e.toString()}';
-      print('Hata: $e');
     } finally {
       isLoading.value = false;
     }
@@ -150,7 +143,6 @@ class WeatherController extends GetxController {
         await fetchWeatherData(currentCity.value);
       }
     } catch (e) {
-      print('Konum kontrolü sırasında hata: $e');
       if (currentCity.value.isEmpty) {
         currentCity.value = 'İstanbul';
         await fetchWeatherData(currentCity.value);

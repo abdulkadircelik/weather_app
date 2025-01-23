@@ -16,7 +16,6 @@ class WeatherService {
     try {
       return _getWeatherBackgroundUrl(condition, isNight);
     } catch (e) {
-      print('Arka plan resmi alınırken hata: $e');
       return _getDefaultBackgroundUrl();
     }
   }
@@ -112,19 +111,14 @@ class WeatherService {
 
   Future<WeatherModel> getCurrentWeather(String city) async {
     try {
-      print('Fetching current weather for $city');
       final response = await http.get(
         Uri.parse(
             '$baseUrl/weather?q=$city&appid=$apiKey&units=metric&lang=tr'),
       );
 
-      print('Current weather response status: ${response.statusCode}');
-      print('Current weather response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print(
-            'Visibility: ${data['visibility']}, Pressure: ${data['main']['pressure']}'); // Debug için eklendi
+        // Debug için eklendi
         return WeatherModel(
           cityName: data['name'],
           temperature: data['main']['temp'].toDouble(),
@@ -150,21 +144,16 @@ class WeatherService {
         throw Exception('API Error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('Error getting weather: $e');
       rethrow;
     }
   }
 
   Future<List<HourlyForecast>> getHourlyForecast(String city) async {
     try {
-      print('Fetching hourly forecast for $city');
       final response = await http.get(
         Uri.parse(
             '$baseUrl/forecast?q=$city&appid=$apiKey&units=metric&lang=tr'),
       );
-
-      print('Hourly forecast response status: ${response.statusCode}');
-      print('Hourly forecast response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -172,11 +161,8 @@ class WeatherService {
         return list
             .take(8)
             .map((item) => HourlyForecast(
-                  hour: DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000)
-                          .hour
-                          .toString()
-                          .padLeft(2, '0') +
-                      ':00',
+                  hour:
+                      '${DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000).hour.toString().padLeft(2, '0')}:00',
                   temperature: item['main']['temp'].toDouble(),
                   description: item['weather'][0]['description'],
                   icon: item['weather'][0]['icon'],
@@ -188,14 +174,12 @@ class WeatherService {
         throw Exception('API Error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('Error getting hourly forecast: $e');
       rethrow;
     }
   }
 
   Future<List<DailyForecast>> getDailyForecast(String city) async {
     try {
-      print('Fetching daily forecast for $city');
       final response = await http.get(
         Uri.parse(
             '$baseUrl/forecast?q=$city&appid=$apiKey&units=metric&lang=tr'),
@@ -227,10 +211,12 @@ class WeatherService {
           // O günün tüm örneklerini kontrol et
           for (var sample in samples) {
             final temp = sample['main'];
-            if (temp['temp_max'] > maxTemp)
+            if (temp['temp_max'] > maxTemp) {
               maxTemp = temp['temp_max'].toDouble();
-            if (temp['temp_min'] < minTemp)
+            }
+            if (temp['temp_min'] < minTemp) {
               minTemp = temp['temp_min'].toDouble();
+            }
           }
 
           // Günün ortasındaki veriyi kullan (öğlen vakti)
@@ -261,7 +247,6 @@ class WeatherService {
         throw Exception('API Error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('Error getting daily forecast: $e');
       rethrow;
     }
   }
@@ -269,19 +254,14 @@ class WeatherService {
   Future<WeatherModel> getCurrentWeatherByCoordinates(
       double latitude, double longitude) async {
     try {
-      print('Fetching current weather for coordinates: $latitude, $longitude');
       final response = await http.get(
         Uri.parse(
             '$baseUrl/weather?lat=$latitude&lon=$longitude&appid=$apiKey&units=metric&lang=tr'),
       );
 
-      print('Current weather response status: ${response.statusCode}');
-      print('Current weather response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print(
-            'Visibility: ${data['visibility']}, Pressure: ${data['main']['pressure']}'); // Debug için eklendi
+        // Debug için eklendi
         return WeatherModel(
           cityName: data['name'],
           temperature: data['main']['temp'].toDouble(),
@@ -307,7 +287,6 @@ class WeatherService {
         throw Exception('API Error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('Error getting weather by coordinates: $e');
       rethrow;
     }
   }

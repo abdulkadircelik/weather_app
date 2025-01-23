@@ -7,13 +7,9 @@ import '../../modules/weather/controllers/weather_controller.dart';
 class LocationService {
   Future<Position?> getCurrentLocation() async {
     try {
-      print('Konum servisi kontrolü başlatıldı');
-
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      print('Konum servisi durumu: $serviceEnabled');
 
       if (!serviceEnabled) {
-        print('Konum servisi kapalı');
         bool? openLocationSettings = await Get.dialog<bool>(
           AlertDialog(
             title: const Text('Konum Servisi Kapalı'),
@@ -48,15 +44,11 @@ class LocationService {
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
-      print('Mevcut konum izni: $permission');
 
       if (permission == LocationPermission.denied) {
-        print('Konum izni isteniyor...');
         permission = await Geolocator.requestPermission();
-        print('Konum izni yanıtı: $permission');
 
         if (permission == LocationPermission.denied) {
-          print('Konum izni reddedildi');
           bool? openAppSettings = await Get.dialog<bool>(
             AlertDialog(
               title: const Text('Konum İzni Gerekli'),
@@ -91,7 +83,6 @@ class LocationService {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        print('Konum izni kalıcı olarak reddedildi');
         bool? openAppSettings = await Get.dialog<bool>(
           AlertDialog(
             title: const Text('Konum İzni Gerekli'),
@@ -125,16 +116,13 @@ class LocationService {
         }
       }
 
-      print('Konum alınıyor...');
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 5),
       );
-      print('Konum alındı: ${position.latitude}, ${position.longitude}');
 
       return position;
     } catch (e) {
-      print('Konum alınırken hata oluştu: $e');
       rethrow;
     }
   }

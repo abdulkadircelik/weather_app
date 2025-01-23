@@ -14,10 +14,10 @@ class AppTheme {
     colorScheme: const ColorScheme.dark(
       primary: primaryColor,
       secondary: secondaryColor,
-      background: backgroundColor,
+      surface: backgroundColor,
     ),
     cardTheme: CardTheme(
-      color: cardColor.withOpacity(0.2),
+      color: cardColor.withAlpha(100),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),

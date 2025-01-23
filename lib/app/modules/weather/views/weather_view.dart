@@ -1,48 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/weather_controller.dart';
-import '../../../core/theme/app_theme.dart';
 import 'search_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
 
 class WeatherView extends GetView<WeatherController> {
+  // ignore: use_super_parameters
   const WeatherView({Key? key}) : super(key: key);
 
   String _getWeatherIconUrl(String iconCode) {
     return 'https://openweathermap.org/img/wn/$iconCode@2x.png';
-  }
-
-  String _getBackgroundImage(String? weatherIcon) {
-    if (weatherIcon == null) return 'assets/images/default.jpg';
-
-    // Gündüz ve gece durumlarını kontrol et
-    bool isNight = weatherIcon.endsWith('n');
-    String condition = weatherIcon.substring(0, 2);
-
-    switch (condition) {
-      case '01': // açık hava
-        return isNight
-            ? 'assets/images/clear_night.jpg'
-            : 'assets/images/clear_day.jpg';
-      case '02': // az bulutlu
-      case '03': // parçalı bulutlu
-      case '04': // bulutlu
-        return isNight
-            ? 'assets/images/cloudy_night.jpg'
-            : 'assets/images/cloudy_day.jpg';
-      case '09': // sağanak yağış
-      case '10': // yağmur
-        return 'assets/images/rain.jpg';
-      case '11': // gök gürültülü
-        return 'assets/images/thunderstorm.jpg';
-      case '13': // kar
-        return 'assets/images/snow.jpg';
-      case '50': // sisli
-        return 'assets/images/mist.jpg';
-      default:
-        return 'assets/images/default.jpg';
-    }
   }
 
   @override
@@ -108,7 +75,7 @@ class WeatherView extends GetView<WeatherController> {
               ),
               fit: BoxFit.cover,
               colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.3),
+                Colors.black.withAlpha(100),
                 BlendMode.darken,
               ),
             ),
@@ -417,7 +384,7 @@ class WeatherView extends GetView<WeatherController> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white.withOpacity(0.6),
+                              color: Colors.white.withAlpha(100),
                             ),
                           ),
                         ],
