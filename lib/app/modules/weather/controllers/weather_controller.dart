@@ -3,11 +3,11 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../data/models/weather_model.dart';
 import '../../../data/models/hourly_forecast.dart';
 import '../../../data/models/daily_forecast.dart';
-import '../../../data/services/weather_service.dart';
+import '../../../data/repositories/weather_repository.dart';
 import '../../../data/services/location_service.dart';
 
 class WeatherController extends GetxController {
-  final WeatherService _weatherService = WeatherService();
+  final WeatherRepository _weatherRepository = Get.find<WeatherRepository>();
   final LocationService _locationService = LocationService();
   final _connectivity = Connectivity();
 
@@ -28,6 +28,21 @@ class WeatherController extends GetxController {
     _initializeWeatherData();
   }
 
+  void toggleTemperatureUnit() {
+    isCelsius.toggle();
+    if (currentWeather.value != null) {
+      currentWeather.refresh();
+      hourlyForecast.refresh();
+      dailyForecast.refresh();
+    }
+  }
+
+  double convertTemperature(double celsius) {
+    return isCelsius.value ? celsius : (celsius * 9 / 5) + 32;
+  }
+
+  String getTemperatureUnit() => isCelsius.value ? '°C' : '°F';
+
   Future<void> _initializeWeatherData() async {
     try {
       isLoading.value = true;
@@ -37,22 +52,21 @@ class WeatherController extends GetxController {
 
       if (position != null) {
         try {
-          final response = await _weatherService.getCurrentWeatherByCoordinates(
+          final response =
+              await _weatherRepository.getCurrentWeatherByCoordinates(
             position.latitude,
             position.longitude,
           );
           currentCity.value = response.cityName;
           await fetchWeatherData(currentCity.value);
-          return; // Konum başarıyla alındıysa ve hava durumu getiriliyorsa fonksiyondan çık
+          return;
         } catch (e) {
-          // Hata durumunda İstanbul'a geri dön
           currentCity.value = 'İstanbul';
         }
       } else {
         currentCity.value = 'İstanbul';
       }
 
-      // Eğer buraya kadar gelindiyse (konum alınamadıysa veya hata olduysa) İstanbul için hava durumunu getir
       await fetchWeatherData(currentCity.value);
     } catch (e) {
       errorMessage.value = e.toString();
@@ -67,7 +81,7 @@ class WeatherController extends GetxController {
     _connectivity.onConnectivityChanged.listen((result) {
       hasInternetConnection.value = result != ConnectivityResult.none;
       if (hasInternetConnection.value) {
-        fetchWeatherData(currentCity.value);
+        checkLocationAndUpdateWeather();
       }
     });
   }
@@ -77,8 +91,8 @@ class WeatherController extends GetxController {
       final condition = currentWeather.value!.description;
       final isNight = currentWeather.value!.icon.endsWith('n');
       try {
-        final imageUrl =
-            await _weatherService.getWeatherBackgroundImage(condition, isNight);
+        final imageUrl = await _weatherRepository.getWeatherBackgroundImage(
+            condition, isNight);
         backgroundImageUrl.value = imageUrl;
       } catch (e) {
         backgroundImageUrl.value = '';
@@ -96,14 +110,14 @@ class WeatherController extends GetxController {
     errorMessage.value = '';
 
     try {
-      final weather = await _weatherService.getCurrentWeather(city);
+      final weather = await _weatherRepository.getCurrentWeather(city);
       currentWeather.value = weather;
       currentCity.value = weather.cityName;
 
-      final hourly = await _weatherService.getHourlyForecast(city);
+      final hourly = await _weatherRepository.getHourlyForecast(city);
       hourlyForecast.value = hourly;
 
-      final daily = await _weatherService.getDailyForecast(city);
+      final daily = await _weatherRepository.getDailyForecast(city);
       dailyForecast.value = daily;
 
       await _updateBackgroundImage();
@@ -114,28 +128,17 @@ class WeatherController extends GetxController {
     }
   }
 
-  void toggleTemperatureUnit() {
-    isCelsius.value = !isCelsius.value;
-  }
-
-  double convertTemperature(double celsius) {
-    return isCelsius.value ? celsius : (celsius * 9 / 5) + 32;
-  }
-
-  String getTemperatureUnit() {
-    return isCelsius.value ? '°C' : '°F';
-  }
-
   void refreshWeatherData() {
     fetchWeatherData(currentCity.value);
   }
 
-  // Konum servisi ayarlarından dönüldüğünde konumu tekrar kontrol et
   Future<void> checkLocationAndUpdateWeather() async {
     try {
       final position = await _locationService.getCurrentLocation();
       if (position != null) {
-        final response = await _weatherService.getCurrentWeatherByCoordinates(
+        isLoading.value = true;
+        final response =
+            await _weatherRepository.getCurrentWeatherByCoordinates(
           position.latitude,
           position.longitude,
         );
@@ -143,10 +146,13 @@ class WeatherController extends GetxController {
         await fetchWeatherData(currentCity.value);
       }
     } catch (e) {
+      print('Konum güncelleme hatası: $e');
       if (currentCity.value.isEmpty) {
         currentCity.value = 'İstanbul';
         await fetchWeatherData(currentCity.value);
       }
+    } finally {
+      isLoading.value = false;
     }
   }
 }

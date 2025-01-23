@@ -18,11 +18,22 @@ class DailyForecast {
   factory DailyForecast.fromJson(Map<String, dynamic> json) {
     return DailyForecast(
       date: DateTime.fromMillisecondsSinceEpoch(json['dt'] * 1000),
-      maxTemp: (json['temp']['max'] as num).toDouble(),
-      minTemp: (json['temp']['min'] as num).toDouble(),
-      icon: json['weather'][0]['icon'],
-      description: json['weather'][0]['description'],
-      rain: (json['rain'] ?? 0.0).toDouble(),
+      maxTemp: (json['main']['temp_max'] as num).toDouble(),
+      minTemp: (json['main']['temp_min'] as num).toDouble(),
+      icon: json['weather'][0]['icon'] as String,
+      description: json['weather'][0]['description'] as String,
+      rain: (json['rain']?['3h'] as num?)?.toDouble() ?? 0.0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'date': date.toIso8601String(),
+      'maxTemp': maxTemp,
+      'minTemp': minTemp,
+      'icon': icon,
+      'description': description,
+      'rain': rain,
+    };
   }
 }
