@@ -81,7 +81,7 @@ class WeatherController extends GetxController {
     _connectivity.onConnectivityChanged.listen((result) {
       hasInternetConnection.value = result != ConnectivityResult.none;
       if (hasInternetConnection.value) {
-        checkLocationAndUpdateWeather();
+        fetchWeatherData(currentCity.value);
       }
     });
   }
@@ -136,7 +136,6 @@ class WeatherController extends GetxController {
     try {
       final position = await _locationService.getCurrentLocation();
       if (position != null) {
-        isLoading.value = true;
         final response =
             await _weatherRepository.getCurrentWeatherByCoordinates(
           position.latitude,
@@ -146,13 +145,10 @@ class WeatherController extends GetxController {
         await fetchWeatherData(currentCity.value);
       }
     } catch (e) {
-      print('Konum güncelleme hatası: $e');
       if (currentCity.value.isEmpty) {
         currentCity.value = 'İstanbul';
         await fetchWeatherData(currentCity.value);
       }
-    } finally {
-      isLoading.value = false;
     }
   }
 }
