@@ -31,13 +31,16 @@ class LocationService {
 
         if (openLocationSettings == true) {
           await Geolocator.openLocationSettings();
-          // Ayarlar açıldıktan sonra tekrar kontrol et
+          // Ayarlar açıldıktan sonra kullanıcıya biraz zaman ver
+          await Future.delayed(const Duration(seconds: 2));
           serviceEnabled = await Geolocator.isLocationServiceEnabled();
           if (!serviceEnabled) {
             throw Exception('Konum servisi devre dışı.');
           }
-          // Konum servisi açıldıysa, WeatherController'daki checkLocationAndUpdateWeather metodunu çağır
-          await Get.find<WeatherController>().checkLocationAndUpdateWeather();
+          // Konum servisi açıldıysa, konumu al ve WeatherController'ı güncelle
+          final position = await _getPosition();
+          await Get.find<WeatherController>().updateLocationWeather(position);
+          return position;
         } else {
           throw Exception('Konum servisi gerekli.');
         }
@@ -70,12 +73,15 @@ class LocationService {
 
           if (openAppSettings == true) {
             await Geolocator.openAppSettings();
+            await Future.delayed(const Duration(seconds: 2));
             permission = await Geolocator.checkPermission();
             if (permission == LocationPermission.denied) {
               throw Exception('Konum izni reddedildi.');
             }
-            // İzin verildiyse, WeatherController'daki checkLocationAndUpdateWeather metodunu çağır
-            await Get.find<WeatherController>().checkLocationAndUpdateWeather();
+            // İzin verildiyse, konumu al ve WeatherController'ı güncelle
+            final position = await _getPosition();
+            await Get.find<WeatherController>().updateLocationWeather(position);
+            return position;
           } else {
             throw Exception('Konum izni gerekli.');
           }
@@ -104,26 +110,34 @@ class LocationService {
 
         if (openAppSettings == true) {
           await Geolocator.openAppSettings();
+          await Future.delayed(const Duration(seconds: 2));
           permission = await Geolocator.checkPermission();
           if (permission == LocationPermission.deniedForever) {
             throw Exception(
                 'Konum izni kalıcı olarak reddedildi. Lütfen ayarlardan konum iznini etkinleştirin.');
           }
-          // İzin verildiyse, WeatherController'daki checkLocationAndUpdateWeather metodunu çağır
-          await Get.find<WeatherController>().checkLocationAndUpdateWeather();
+          // İzin verildiyse, konumu al ve WeatherController'ı güncelle
+          final position = await _getPosition();
+          await Get.find<WeatherController>().updateLocationWeather(position);
+          return position;
         } else {
           throw Exception('Konum izni gerekli.');
         }
       }
 
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 5),
-      );
-
+      // Normal durumda konumu al ve WeatherController'ı güncelle
+      final position = await _getPosition();
+      await Get.find<WeatherController>().updateLocationWeather(position);
       return position;
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<Position> _getPosition() async {
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+      timeLimit: const Duration(seconds: 5),
+    );
   }
 }

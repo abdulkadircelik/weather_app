@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../data/models/weather_model.dart';
 import '../../../data/models/hourly_forecast.dart';
 import '../../../data/models/daily_forecast.dart';
@@ -59,15 +60,15 @@ class WeatherController extends GetxController {
           );
           currentCity.value = response.cityName;
           await fetchWeatherData(currentCity.value);
-          return;
         } catch (e) {
+          errorMessage.value = e.toString();
           currentCity.value = 'İstanbul';
+          await fetchWeatherData(currentCity.value);
         }
       } else {
         currentCity.value = 'İstanbul';
+        await fetchWeatherData(currentCity.value);
       }
-
-      await fetchWeatherData(currentCity.value);
     } catch (e) {
       errorMessage.value = e.toString();
       currentCity.value = 'İstanbul';
@@ -134,6 +135,7 @@ class WeatherController extends GetxController {
 
   Future<void> checkLocationAndUpdateWeather() async {
     try {
+      isLoading.value = true;
       final position = await _locationService.getCurrentLocation();
       if (position != null) {
         final response =
@@ -145,6 +147,26 @@ class WeatherController extends GetxController {
         await fetchWeatherData(currentCity.value);
       }
     } catch (e) {
+      errorMessage.value = e.toString();
+      if (currentCity.value.isEmpty) {
+        currentCity.value = 'İstanbul';
+        await fetchWeatherData(currentCity.value);
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> updateLocationWeather(Position position) async {
+    try {
+      final response = await _weatherRepository.getCurrentWeatherByCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      currentCity.value = response.cityName;
+      await fetchWeatherData(currentCity.value);
+    } catch (e) {
+      errorMessage.value = e.toString();
       if (currentCity.value.isEmpty) {
         currentCity.value = 'İstanbul';
         await fetchWeatherData(currentCity.value);
