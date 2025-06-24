@@ -1,7 +1,4 @@
 class ApiConstants {
-  static const String baseUrl = 'https://api.openweathermap.org/data/2.5';
-  static const String imageBaseUrl = 'https://api.unsplash.com';
-
   // Hava durumu ikon URL'leri
   static const Map<String, String> dayWeatherImages = {
     '01d':

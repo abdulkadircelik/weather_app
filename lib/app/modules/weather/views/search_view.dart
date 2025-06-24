@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/weather_controller.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 
 class SearchView extends GetView<WeatherController> {
   // ignore: use_super_parameters
@@ -47,14 +48,11 @@ class SearchView extends GetView<WeatherController> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: ListView(
-                children: [
-                  _buildQuickCityItem('İstanbul'),
-                  _buildQuickCityItem('Ankara'),
-                  _buildQuickCityItem('İzmir'),
-                  _buildQuickCityItem('Antalya'),
-                  _buildQuickCityItem('Bursa'),
-                ],
+              child: ListView.builder(
+                itemCount: AppConstants.defaultCities.length,
+                itemBuilder: (context, index) {
+                  return _buildQuickCityItem(AppConstants.defaultCities[index]);
+                },
               ),
             ),
           ],

@@ -1,14 +1,31 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/weather_model.dart';
 import '../models/hourly_forecast.dart';
 import '../models/daily_forecast.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/constants/api_endpoints.dart';
+import '../../core/constants/app_constants.dart';
+import 'http_service.dart';
 
-class WeatherService {
-  final String apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
+abstract class IWeatherService {
+  Future<WeatherModel> getCurrentWeather(String city);
+  Future<WeatherModel> getCurrentWeatherByCoordinates(
+      double latitude, double longitude);
+  Future<List<HourlyForecast>> getHourlyForecast(String city);
+  Future<List<DailyForecast>> getDailyForecast(String city);
+  Future<String> getWeatherBackgroundImage(String condition, bool isNight);
+}
 
+class WeatherService implements IWeatherService {
+  final IHttpService _httpService;
+  final String _apiKey;
+
+  WeatherService({
+    required IHttpService httpService,
+  })  : _httpService = httpService,
+        _apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
+
+  @override
   Future<String> getWeatherBackgroundImage(
       String condition, bool isNight) async {
     try {
@@ -50,181 +67,143 @@ class WeatherService {
     return ApiConstants.defaultBackgroundUrl;
   }
 
+  @override
   Future<WeatherModel> getCurrentWeather(String city) async {
     try {
-      final response = await http.get(
-        Uri.parse(
-            '${ApiConstants.baseUrl}/weather?q=$city&appid=$apiKey&units=metric&lang=tr'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return WeatherModel(
-          cityName: data['name'],
-          temperature: data['main']['temp'].toDouble(),
-          description: data['weather'][0]['description'],
-          maxTemp: data['main']['temp_max'].toDouble(),
-          minTemp: data['main']['temp_min'].toDouble(),
-          windSpeed: data['wind']['speed'].toDouble(),
-          sunrise:
-              DateTime.fromMillisecondsSinceEpoch(data['sys']['sunrise'] * 1000)
-                  .toString()
-                  .substring(11, 16),
-          sunset:
-              DateTime.fromMillisecondsSinceEpoch(data['sys']['sunset'] * 1000)
-                  .toString()
-                  .substring(11, 16),
-          humidity: data['main']['humidity'],
-          feelsLike: data['main']['feels_like'].toDouble(),
-          icon: data['weather'][0]['icon'],
-          visibility: (data['visibility'] ?? 0) as int,
-          pressure: (data['main']['pressure'] ?? 0) as int,
-        );
-      } else {
-        throw Exception('API Error: ${response.statusCode} - ${response.body}');
-      }
+      final url = _buildCurrentWeatherUrl(city: city);
+      final data = await _httpService.get(url);
+      return WeatherModel.fromJson(data);
     } catch (e) {
-      rethrow;
+      throw Exception('${AppConstants.weatherDataError}: $e');
     }
   }
 
+  @override
   Future<List<HourlyForecast>> getHourlyForecast(String city) async {
     try {
-      final response = await http.get(
-        Uri.parse(
-            '${ApiConstants.baseUrl}/forecast?q=$city&appid=$apiKey&units=metric&lang=tr'),
-      );
+      final url = _buildForecastUrl(city: city);
+      final data = await _httpService.get(url);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final List<dynamic> list = data['list'];
-        return list
-            .take(8)
-            .map((item) => HourlyForecast(
-                  hour:
-                      '${DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000).hour.toString().padLeft(2, '0')}:00',
-                  temperature: item['main']['temp'].toDouble(),
-                  description: item['weather'][0]['description'],
-                  icon: item['weather'][0]['icon'],
-                  time: DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000),
-                  rain: item['rain']?['3h']?.toDouble() ?? 0.0,
-                ))
-            .toList();
-      } else {
-        throw Exception('API Error: ${response.statusCode} - ${response.body}');
-      }
+      final List<dynamic> list = data['list'];
+      return list
+          .take(AppConstants.hourlyForecastLimit)
+          .map((item) => HourlyForecast.fromJson(item))
+          .toList();
     } catch (e) {
-      rethrow;
+      throw Exception('${AppConstants.hourlyForecastError}: $e');
     }
   }
 
+  @override
   Future<List<DailyForecast>> getDailyForecast(String city) async {
     try {
-      final response = await http.get(
-        Uri.parse(
-            '${ApiConstants.baseUrl}/forecast?q=$city&appid=$apiKey&units=metric&lang=tr'),
-      );
+      final url = _buildForecastUrl(city: city);
+      final data = await _httpService.get(url);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final List<dynamic> list = data['list'];
-        final Map<String, List<dynamic>> dailyData = {};
+      final List<dynamic> list = data['list'];
+      final Map<String, List<dynamic>> dailyData = {};
 
-        for (var item in list) {
-          final date = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
-          final dateKey = '${date.year}-${date.month}-${date.day}';
+      for (var item in list) {
+        final date = DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000);
+        final dateKey = '${date.year}-${date.month}-${date.day}';
 
-          if (!dailyData.containsKey(dateKey)) {
-            dailyData[dateKey] = [];
+        if (!dailyData.containsKey(dateKey)) {
+          dailyData[dateKey] = [];
+        }
+        dailyData[dateKey]!.add(item);
+      }
+
+      final List<DailyForecast> dailyForecasts = dailyData.entries.map((entry) {
+        final samples = entry.value;
+        double maxTemp = double.negativeInfinity;
+        double minTemp = double.infinity;
+
+        for (var sample in samples) {
+          final temp = sample['main'];
+          if (temp['temp_max'] > maxTemp) {
+            maxTemp = temp['temp_max'].toDouble();
           }
-          dailyData[dateKey]!.add(item);
+          if (temp['temp_min'] < minTemp) {
+            minTemp = temp['temp_min'].toDouble();
+          }
         }
 
-        final List<DailyForecast> dailyForecasts =
-            dailyData.entries.map((entry) {
-          final samples = entry.value;
-          double maxTemp = double.negativeInfinity;
-          double minTemp = double.infinity;
+        final middayData = samples.firstWhere(
+          (item) {
+            final hour =
+                DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000).hour;
+            return hour >= 12 && hour <= 15;
+          },
+          orElse: () => samples.first,
+        );
 
-          for (var sample in samples) {
-            final temp = sample['main'];
-            if (temp['temp_max'] > maxTemp) {
-              maxTemp = temp['temp_max'].toDouble();
-            }
-            if (temp['temp_min'] < minTemp) {
-              minTemp = temp['temp_min'].toDouble();
-            }
-          }
+        return DailyForecast(
+          date: DateTime.fromMillisecondsSinceEpoch(middayData['dt'] * 1000),
+          maxTemp: maxTemp,
+          minTemp: minTemp,
+          icon: middayData['weather'][0]['icon'],
+          description: middayData['weather'][0]['description'],
+          rain: middayData['rain']?['3h']?.toDouble() ?? 0.0,
+        );
+      }).toList();
 
-          final middayData = samples.firstWhere(
-            (item) {
-              final hour =
-                  DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000).hour;
-              return hour >= 12 && hour <= 15;
-            },
-            orElse: () => samples.first,
-          );
-
-          return DailyForecast(
-            date: DateTime.fromMillisecondsSinceEpoch(middayData['dt'] * 1000),
-            maxTemp: maxTemp,
-            minTemp: minTemp,
-            icon: middayData['weather'][0]['icon'],
-            description: middayData['weather'][0]['description'],
-            rain: middayData['rain']?['3h']?.toDouble() ?? 0.0,
-          );
-        }).toList();
-
-        dailyForecasts.sort((a, b) => a.date.compareTo(b.date));
-        return dailyForecasts.take(5).toList();
-      } else {
-        throw Exception('API Error: ${response.statusCode} - ${response.body}');
-      }
+      dailyForecasts.sort((a, b) => a.date.compareTo(b.date));
+      return dailyForecasts.take(AppConstants.dailyForecastLimit).toList();
     } catch (e) {
-      rethrow;
+      throw Exception('${AppConstants.dailyForecastError}: $e');
     }
   }
 
+  @override
   Future<WeatherModel> getCurrentWeatherByCoordinates(
       double latitude, double longitude) async {
     try {
-      final response = await http.get(
-        Uri.parse(
-            '${ApiConstants.baseUrl}/weather?lat=$latitude&lon=$longitude&appid=$apiKey&units=metric&lang=tr'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return WeatherModel(
-          cityName: data['name'],
-          temperature: data['main']['temp'].toDouble(),
-          description: data['weather'][0]['description'],
-          maxTemp: data['main']['temp_max'].toDouble(),
-          minTemp: data['main']['temp_min'].toDouble(),
-          windSpeed: data['wind']['speed'].toDouble(),
-          sunrise:
-              DateTime.fromMillisecondsSinceEpoch(data['sys']['sunrise'] * 1000)
-                  .toString()
-                  .substring(11, 16),
-          sunset:
-              DateTime.fromMillisecondsSinceEpoch(data['sys']['sunset'] * 1000)
-                  .toString()
-                  .substring(11, 16),
-          humidity: data['main']['humidity'],
-          feelsLike: data['main']['feels_like'].toDouble(),
-          icon: data['weather'][0]['icon'],
-          visibility: (data['visibility'] ?? 0) as int,
-          pressure: (data['main']['pressure'] ?? 0) as int,
-        );
-      } else {
-        throw Exception('API Error: ${response.statusCode} - ${response.body}');
-      }
+      final url =
+          _buildCurrentWeatherUrl(latitude: latitude, longitude: longitude);
+      final data = await _httpService.get(url);
+      return WeatherModel.fromJson(data);
     } catch (e) {
-      rethrow;
+      throw Exception('${AppConstants.locationBasedWeatherError}: $e');
     }
   }
 
-  String getWeatherIconUrl(String iconCode) {
-    return 'https://openweathermap.org/img/wn/$iconCode@2x.png';
+  String _buildCurrentWeatherUrl(
+      {String? city, double? latitude, double? longitude}) {
+    final baseUrl =
+        '${ApiEndpoints.openWeatherBaseUrl}${ApiEndpoints.currentWeather}';
+    final queryParams = <String, String>{
+      ApiEndpoints.apiKeyParam: _apiKey,
+      ApiEndpoints.unitsParam: ApiEndpoints.defaultUnits,
+      ApiEndpoints.langParam: ApiEndpoints.defaultLang,
+    };
+
+    if (city != null) {
+      queryParams[ApiEndpoints.cityParam] = city;
+    } else if (latitude != null && longitude != null) {
+      queryParams[ApiEndpoints.latParam] = latitude.toString();
+      queryParams[ApiEndpoints.lonParam] = longitude.toString();
+    }
+
+    return Uri.parse(baseUrl).replace(queryParameters: queryParams).toString();
+  }
+
+  String _buildForecastUrl(
+      {String? city, double? latitude, double? longitude}) {
+    final baseUrl =
+        '${ApiEndpoints.openWeatherBaseUrl}${ApiEndpoints.forecast}';
+    final queryParams = <String, String>{
+      ApiEndpoints.apiKeyParam: _apiKey,
+      ApiEndpoints.unitsParam: ApiEndpoints.defaultUnits,
+      ApiEndpoints.langParam: ApiEndpoints.defaultLang,
+    };
+
+    if (city != null) {
+      queryParams[ApiEndpoints.cityParam] = city;
+    } else if (latitude != null && longitude != null) {
+      queryParams[ApiEndpoints.latParam] = latitude.toString();
+      queryParams[ApiEndpoints.lonParam] = longitude.toString();
+    }
+
+    return Uri.parse(baseUrl).replace(queryParameters: queryParams).toString();
   }
 }

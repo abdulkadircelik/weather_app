@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../modules/weather/controllers/weather_controller.dart';
+import '../core/constants/api_endpoints.dart';
 
 class HourlyForecastList extends GetView<WeatherController> {
   // ignore: use_super_parameters
@@ -110,7 +111,8 @@ class HourlyForecastList extends GetView<WeatherController> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Image.network(
-                                'https://openweathermap.org/img/w/${forecast.icon}.png',
+                                ApiEndpoints.getWeatherIconUrlSmall(
+                                    forecast.icon),
                                 width: 40,
                                 height: 40,
                                 errorBuilder: (context, error, stackTrace) =>

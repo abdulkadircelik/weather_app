@@ -4,12 +4,13 @@ import 'package:geolocator/geolocator.dart';
 import '../../../data/models/weather_model.dart';
 import '../../../data/models/hourly_forecast.dart';
 import '../../../data/models/daily_forecast.dart';
-import '../../../data/repositories/weather_repository.dart';
+import '../../../data/repositories/weather_repository_interface.dart';
 import '../../../data/services/location_service.dart';
+import '../../../core/constants/app_constants.dart';
 
 class WeatherController extends GetxController {
-  final WeatherRepository _weatherRepository = Get.find<WeatherRepository>();
-  final LocationService _locationService = LocationService();
+  final IWeatherRepository _weatherRepository = Get.find<IWeatherRepository>();
+  final ILocationService _locationService = Get.find<ILocationService>();
   final _connectivity = Connectivity();
 
   final currentWeather = Rx<WeatherModel?>(null);
@@ -18,7 +19,7 @@ class WeatherController extends GetxController {
   final errorMessage = RxString('');
   final isLoading = RxBool(false);
   final isCelsius = RxBool(true);
-  final currentCity = RxString('İstanbul');
+  final currentCity = RxString(AppConstants.defaultCity);
   final hasInternetConnection = RxBool(true);
   final backgroundImageUrl = RxString('');
 
@@ -62,16 +63,16 @@ class WeatherController extends GetxController {
           await fetchWeatherData(currentCity.value);
         } catch (e) {
           errorMessage.value = e.toString();
-          currentCity.value = 'İstanbul';
+          currentCity.value = AppConstants.defaultCity;
           await fetchWeatherData(currentCity.value);
         }
       } else {
-        currentCity.value = 'İstanbul';
+        currentCity.value = AppConstants.defaultCity;
         await fetchWeatherData(currentCity.value);
       }
     } catch (e) {
       errorMessage.value = e.toString();
-      currentCity.value = 'İstanbul';
+      currentCity.value = AppConstants.defaultCity;
       await fetchWeatherData(currentCity.value);
     } finally {
       isLoading.value = false;
@@ -103,7 +104,7 @@ class WeatherController extends GetxController {
 
   Future<void> fetchWeatherData(String city) async {
     if (!hasInternetConnection.value) {
-      errorMessage.value = 'İnternet bağlantısı yok';
+      errorMessage.value = AppConstants.noInternetError;
       return;
     }
 
@@ -123,7 +124,7 @@ class WeatherController extends GetxController {
 
       await _updateBackgroundImage();
     } catch (e) {
-      errorMessage.value = 'Hava durumu verileri alınamadı: ${e.toString()}';
+      errorMessage.value = '${AppConstants.weatherDataError}: ${e.toString()}';
     } finally {
       isLoading.value = false;
     }
@@ -149,7 +150,7 @@ class WeatherController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
       if (currentCity.value.isEmpty) {
-        currentCity.value = 'İstanbul';
+        currentCity.value = AppConstants.defaultCity;
         await fetchWeatherData(currentCity.value);
       }
     } finally {
@@ -168,7 +169,7 @@ class WeatherController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
       if (currentCity.value.isEmpty) {
-        currentCity.value = 'İstanbul';
+        currentCity.value = AppConstants.defaultCity;
         await fetchWeatherData(currentCity.value);
       }
     }

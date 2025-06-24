@@ -1,48 +1,112 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import '../../core/constants/app_constants.dart';
 
-import '../../modules/weather/controllers/weather_controller.dart';
+abstract class ILocationService {
+  Future<Position?> getCurrentLocation();
+}
 
-class LocationService {
+abstract class IDialogService {
+  Future<bool?> showLocationServiceDialog();
+  Future<bool?> showLocationPermissionDialog();
+  Future<bool?> showLocationPermissionPermanentlyDeniedDialog();
+}
+
+class DialogService implements IDialogService {
+  @override
+  Future<bool?> showLocationServiceDialog() async {
+    return await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Konum Servisi Kapalı'),
+        content: const Text(
+            'Konumunuza göre hava durumu bilgisi almak için lütfen konum servisini açın.'),
+        actions: [
+          TextButton(
+            child: const Text('İptal'),
+            onPressed: () => Get.back(result: false),
+          ),
+          TextButton(
+            child: const Text('Ayarlara Git'),
+            onPressed: () => Get.back(result: true),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  @override
+  Future<bool?> showLocationPermissionDialog() async {
+    return await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Konum İzni Gerekli'),
+        content: const Text(
+            'Konumunuza göre hava durumu bilgisi almak için lütfen konum iznini verin.'),
+        actions: [
+          TextButton(
+            child: const Text('İptal'),
+            onPressed: () => Get.back(result: false),
+          ),
+          TextButton(
+            child: const Text('Ayarlara Git'),
+            onPressed: () => Get.back(result: true),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  @override
+  Future<bool?> showLocationPermissionPermanentlyDeniedDialog() async {
+    return await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Konum İzni Gerekli'),
+        content: const Text(
+            'Konum izni kalıcı olarak reddedildi. Lütfen uygulama ayarlarından konum iznini etkinleştirin.'),
+        actions: [
+          TextButton(
+            child: const Text('İptal'),
+            onPressed: () => Get.back(result: false),
+          ),
+          TextButton(
+            child: const Text('Ayarlara Git'),
+            onPressed: () => Get.back(result: true),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+}
+
+class LocationService implements ILocationService {
+  final IDialogService _dialogService;
+
+  LocationService({
+    required IDialogService dialogService,
+  }) : _dialogService = dialogService;
+  @override
   Future<Position?> getCurrentLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (!serviceEnabled) {
-        bool? openLocationSettings = await Get.dialog<bool>(
-          AlertDialog(
-            title: const Text('Konum Servisi Kapalı'),
-            content: const Text(
-                'Konumunuza göre hava durumu bilgisi almak için lütfen konum servisini açın.'),
-            actions: [
-              TextButton(
-                child: const Text('İptal'),
-                onPressed: () => Get.back(result: false),
-              ),
-              TextButton(
-                child: const Text('Ayarlara Git'),
-                onPressed: () => Get.back(result: true),
-              ),
-            ],
-          ),
-          barrierDismissible: false,
-        );
+        bool? openLocationSettings =
+            await _dialogService.showLocationServiceDialog();
 
         if (openLocationSettings == true) {
           await Geolocator.openLocationSettings();
-          // Ayarlar açıldıktan sonra kullanıcıya biraz zaman ver
-          await Future.delayed(const Duration(seconds: 2));
+          await Future.delayed(
+              Duration(seconds: AppConstants.dialogDelaySeconds));
           serviceEnabled = await Geolocator.isLocationServiceEnabled();
           if (!serviceEnabled) {
-            throw Exception('Konum servisi devre dışı.');
+            throw Exception(AppConstants.locationServiceDisabledError);
           }
-          // Konum servisi açıldıysa, konumu al ve WeatherController'ı güncelle
-          final position = await _getPosition();
-          await Get.find<WeatherController>().updateLocationWeather(position);
-          return position;
+          return await _getPosition();
         } else {
-          throw Exception('Konum servisi gerekli.');
+          throw Exception(AppConstants.locationServiceDisabledError);
         }
       }
 
@@ -52,83 +116,44 @@ class LocationService {
         permission = await Geolocator.requestPermission();
 
         if (permission == LocationPermission.denied) {
-          bool? openAppSettings = await Get.dialog<bool>(
-            AlertDialog(
-              title: const Text('Konum İzni Gerekli'),
-              content: const Text(
-                  'Konumunuza göre hava durumu bilgisi almak için lütfen konum iznini verin.'),
-              actions: [
-                TextButton(
-                  child: const Text('İptal'),
-                  onPressed: () => Get.back(result: false),
-                ),
-                TextButton(
-                  child: const Text('Ayarlara Git'),
-                  onPressed: () => Get.back(result: true),
-                ),
-              ],
-            ),
-            barrierDismissible: false,
-          );
+          bool? openAppSettings =
+              await _dialogService.showLocationPermissionDialog();
 
           if (openAppSettings == true) {
             await Geolocator.openAppSettings();
-            await Future.delayed(const Duration(seconds: 2));
+            await Future.delayed(
+                Duration(seconds: AppConstants.dialogDelaySeconds));
             permission = await Geolocator.checkPermission();
             if (permission == LocationPermission.denied) {
-              throw Exception('Konum izni reddedildi.');
+              throw Exception(AppConstants.locationPermissionDeniedError);
             }
-            // İzin verildiyse, konumu al ve WeatherController'ı güncelle
-            final position = await _getPosition();
-            await Get.find<WeatherController>().updateLocationWeather(position);
-            return position;
+            return await _getPosition();
           } else {
-            throw Exception('Konum izni gerekli.');
+            throw Exception(AppConstants.locationPermissionDeniedError);
           }
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        bool? openAppSettings = await Get.dialog<bool>(
-          AlertDialog(
-            title: const Text('Konum İzni Gerekli'),
-            content: const Text(
-                'Konum izni kalıcı olarak reddedildi. Lütfen uygulama ayarlarından konum iznini etkinleştirin.'),
-            actions: [
-              TextButton(
-                child: const Text('İptal'),
-                onPressed: () => Get.back(result: false),
-              ),
-              TextButton(
-                child: const Text('Ayarlara Git'),
-                onPressed: () => Get.back(result: true),
-              ),
-            ],
-          ),
-          barrierDismissible: false,
-        );
+        bool? openAppSettings = await _dialogService
+            .showLocationPermissionPermanentlyDeniedDialog();
 
         if (openAppSettings == true) {
           await Geolocator.openAppSettings();
-          await Future.delayed(const Duration(seconds: 2));
+          await Future.delayed(
+              Duration(seconds: AppConstants.dialogDelaySeconds));
           permission = await Geolocator.checkPermission();
           if (permission == LocationPermission.deniedForever) {
             throw Exception(
-                'Konum izni kalıcı olarak reddedildi. Lütfen ayarlardan konum iznini etkinleştirin.');
+                AppConstants.locationPermissionPermanentlyDeniedError);
           }
-          // İzin verildiyse, konumu al ve WeatherController'ı güncelle
-          final position = await _getPosition();
-          await Get.find<WeatherController>().updateLocationWeather(position);
-          return position;
+          return await _getPosition();
         } else {
-          throw Exception('Konum izni gerekli.');
+          throw Exception(AppConstants.locationPermissionDeniedError);
         }
       }
 
-      // Normal durumda konumu al ve WeatherController'ı güncelle
-      final position = await _getPosition();
-      await Get.find<WeatherController>().updateLocationWeather(position);
-      return position;
+      return await _getPosition();
     } catch (e) {
       rethrow;
     }
@@ -137,7 +162,7 @@ class LocationService {
   Future<Position> _getPosition() async {
     return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
-      timeLimit: const Duration(seconds: 5),
+      timeLimit: Duration(seconds: AppConstants.locationTimeoutSeconds),
     );
   }
 }

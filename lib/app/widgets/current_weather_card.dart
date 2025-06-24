@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../modules/weather/controllers/weather_controller.dart';
+import '../core/constants/api_endpoints.dart';
 
 class CurrentWeatherCard extends GetView<WeatherController> {
   // ignore: use_super_parameters
@@ -77,7 +78,8 @@ class CurrentWeatherCard extends GetView<WeatherController> {
                       ],
                     ),
                     Image.network(
-                      'https://openweathermap.org/img/w/${controller.currentWeather.value?.icon ?? ''}.png',
+                      ApiEndpoints.getWeatherIconUrlSmall(
+                          controller.currentWeather.value?.icon ?? ''),
                       width: 100,
                       height: 100,
                       errorBuilder: (context, error, stackTrace) => const Icon(

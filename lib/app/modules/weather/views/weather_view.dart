@@ -4,13 +4,15 @@ import '../controllers/weather_controller.dart';
 import 'search_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../widgets/loading_widget.dart';
+import '../../../core/constants/api_endpoints.dart';
+import '../../../core/constants/api_constants.dart';
 
 class WeatherView extends GetView<WeatherController> {
   // ignore: use_super_parameters
   const WeatherView({Key? key}) : super(key: key);
 
   String _getWeatherIconUrl(String iconCode) {
-    return 'https://openweathermap.org/img/wn/$iconCode@2x.png';
+    return ApiEndpoints.getWeatherIconUrl(iconCode);
   }
 
   @override
@@ -79,7 +81,7 @@ class WeatherView extends GetView<WeatherController> {
               image: CachedNetworkImageProvider(
                 controller.backgroundImageUrl.value.isNotEmpty
                     ? controller.backgroundImageUrl.value
-                    : 'https://images.unsplash.com/photo-1601297183305-6df142704ea2',
+                    : ApiConstants.defaultBackgroundUrl,
               ),
               fit: BoxFit.cover,
               colorFilter: ColorFilter.mode(
