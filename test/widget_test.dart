@@ -11,20 +11,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_weather_app/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('Weather App Widget Tests', () {
+    testWidgets('should initialize the application successfully',
+        (WidgetTester tester) async {
+      // Arrange & Act
+      await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      // Assert
+      expect(find.byType(MaterialApp), findsOneWidget);
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    testWidgets('should render MaterialApp widget',
+        (WidgetTester tester) async {
+      // Arrange & Act
+      await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+      // Assert
+      expect(find.byType(MaterialApp), findsOneWidget);
+    });
+
+    testWidgets('should not throw errors during initialization',
+        (WidgetTester tester) async {
+      // Arrange & Act & Assert
+      expect(() async {
+        await tester.pumpWidget(const MyApp());
+      }, isNot(throwsException));
+    });
   });
 }

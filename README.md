@@ -350,14 +350,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📞 Support
-
-- 🐛 **Issues**: [GitHub Issues](https://github.com/your-repo/flutter_weather_app/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/your-repo/flutter_weather_app/discussions)
-- 📧 **Email**: support@yourapp.com
-
----
-
 <div align="center">
 
 **Built with ❤️ using Flutter and Clean Architecture**
